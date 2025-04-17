@@ -1,6 +1,10 @@
 import cv2 as cv
 import numpy as np
 import os
+from sklearn.metrics import mean_squared_error
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 
 def padding(img,pad):
@@ -118,24 +122,24 @@ if __name__=='__main__':
     # sobely=[[-1,0,1],[-2,0,-2],[-1,0,1]]
     # imgList=hog(img,sobelx,sobely)
     # print(imgList)
-    base_path = r'C:\AllData\Semester6\DIP\Assignment\Assignment2\A2_wbc_data\wbc_data\Train'
-    class_averages = {}
+    trainPath = r'C:\AllData\Semester6\DIP\Assignment\Assignment2\A2_wbc_data\wbc_data\Train'
+    classAverages = {}
 
     # Loop over all class folders (Basophil, Neutrophil, etc.)
-    for class_name in os.listdir(base_path):
-        class_path = os.path.join(base_path, class_name)
-        if not os.path.isdir(class_path):
+    for className in os.listdir(trainPath):
+        classPath = os.path.join(trainPath, className)
+        if not os.path.isdir(classPath):
             continue
 
-        print(f"Processing {class_name}...")
+        print(f"Processing {className}")
 
-        all_features = []
+        allFeatures = []
 
-        for img_file in os.listdir(class_path):
-            img_path = os.path.join(class_path, img_file)
-            img = cv.imread(img_path, cv.IMREAD_GRAYSCALE)
+        for imgFile in os.listdir(classPath):
+            imgPath = os.path.join(classPath, imgFile)
+            img = cv.imread(imgPath, cv.IMREAD_GRAYSCALE)
             if img is None:
-                print(f"Skipping {img_path}, could not load.")
+                print(f"Skipping {imgPath}, could not load.")
                 continue
 
             img = cv.resize(img, (64, 64))
@@ -144,15 +148,56 @@ if __name__=='__main__':
             sobelx = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]
             sobely = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]]
 
-            feature_vector = hog(img, sobelx, sobely)
-            all_features.append(feature_vector)
+            featureVector = hog(img, sobelx, sobely)
+            allFeatures.append(featureVector)
 
-        if all_features:
-            avg_vector = np.mean(all_features, axis=0)
-            class_averages[class_name] = avg_vector
-            print(f"{class_name} average feature vector length: {len(avg_vector)}")
+        if allFeatures:
+            avgVector = np.mean(allFeatures, axis=0)
+            classAverages[className] = avgVector
+            print(f"{className} average feature vector length: {len(avgVector)}")
 
     print("\nDone! Average HOG features per class:")
-    for cls, avg_vec in class_averages.items():
-        print(f"{cls}: Length = {len(avg_vec)}\n {avg_vec}\n\n")
+    for cls, avgVec in classAverages.items():
+        print(f"{cls}: Length = {len(avgVec)}\n {avgVec}\n\n")
     
+    true_labels = []
+    predicted_labels = []
+    testPath = r'C:\AllData\Semester6\DIP\Assignment\Assignment2\A2_wbc_data\wbc_data\Test'
+    for className in os.listdir(testPath):
+        ClassPath=os.path.join(className,testPath)
+        if not os.path.isdir(classPath):
+            continue
+        print(f'Processing for {className}')
+
+        for imgFile in os.listdir(classPath):
+            imgPath=os.path.join(classPath,imgFile)
+            img=cv.imread(imgPath,cv.IMREAD_GRAYSCALE)
+            if img is None:
+                print(f"Skipping {imgPath}, could not load.")
+                continue
+            img=np.resize(img,(64,64))
+            paddedimg=padding(img,1)
+            testHogimg=hog(img,sobelx,sobely)
+            mse_scores = {}
+            for cls, avg_vector in classAverages.items():
+                mse = mean_squared_error(testHogimg, avg_vector)
+                mse_scores[cls] = mse
+
+            # Get predicted class (lowest MSE)
+            predicted_class = min(mse_scores, key=mse_scores.get)
+            true_labels.append(className)
+            predicted_labels.append(predicted_class)
+
+            print(f"Image: {imgFile} | True Class: {className} | Predicted: {predicted_class}")
+    # Plot confusion matrix
+    labels = sorted(classAverages.keys())  # Make sure order is consistent
+    cm = confusion_matrix(true_labels, predicted_labels, labels=labels)
+
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                            xticklabels=labels, yticklabels=labels)
+    plt.xlabel("Predicted Label")
+    plt.ylabel("True Label")
+    plt.title("Confusion Matrix")
+    plt.tight_layout()
+    plt.show()
