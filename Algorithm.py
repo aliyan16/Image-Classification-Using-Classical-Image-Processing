@@ -76,7 +76,7 @@ def hogImplementation(cell,sobelx,sobely):
     gy=conv(cell,sobely)
     SobelMag=magnitude(gx,gy)
     SobelPhase= Phase(gx,gy)
-    SobelPhase[SobelPhase<180]+=180
+    SobelPhase[SobelPhase<0]+=180
     SobelPhase[SobelPhase>180]-=180
     for m in range(0,180,30):
         CellList[m//30]=np.sum(SobelMag[(SobelPhase>=m)&(SobelPhase<m+30)])
@@ -86,8 +86,8 @@ def hogImplementation(cell,sobelx,sobely):
 
 def hog(img,sobelx,sobely):
     rows,cols=img.shape
-    blockSize=(rows//2,cols//2)
-    CellSize=(blockSize[0]//2,blockSize[1]//2)
+    blockSize=(rows//4,cols//4)
+    CellSize=(blockSize[0]//4,blockSize[1]//4)
     BlockList=[]
     for i in range(0,rows-blockSize[0]+1,blockSize[0]):
         for j in range(0,cols-blockSize[1],blockSize[1]):
