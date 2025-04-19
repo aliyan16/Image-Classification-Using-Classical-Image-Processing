@@ -69,13 +69,13 @@ def norm(img):
     imgm = (img / np.max(img) * 255).astype(np.uint8)
     return imgm
 
-def hogImplementation(cell,sobelx,sobely):
+def hogImplementation(cell,SobelMag,SobelPhase):
     Crows,Ccols=cell.shape
     CellList=[0]*6
-    gx=conv(cell,sobelx)
-    gy=conv(cell,sobely)
-    SobelMag=magnitude(gx,gy)
-    SobelPhase= Phase(gx,gy)
+    # gx=conv(cell,sobelx)
+    # gy=conv(cell,sobely)
+    # SobelMag=magnitude(gx,gy)
+    # SobelPhase= Phase(gx,gy)
     SobelPhase[SobelPhase<0]+=180
     SobelPhase[SobelPhase>180]-=180
     for m in range(0,180,30):
@@ -83,12 +83,33 @@ def hogImplementation(cell,sobelx,sobely):
             
     return CellList
 
+def sobel(img,sobelx,sobely):
+    rows,cols=img.shape
+    magImg=img.copy()
+    phaseImg=img.copy()
+    frows,fcols=sobelx.shape
+
+    for i in range(rows):
+        for j in range(cols):
+            window=img[i:i+frows,j:j+fcols]
+            value1=conv(window,sobelx)
+            value2=conv(window,sobely)
+            magImg[i,j]=value1
+            phaseImg[i,j]=value2
+    return magImg,phaseImg
+
+
 
 def hog(img,sobelx,sobely):
     rows,cols=img.shape
     blockSize=(rows//4,cols//4)
     CellSize=(blockSize[0]//4,blockSize[1]//4)
     BlockList=[]
+
+    gx,gy=sobel(img,sobelx,sobely)
+    SobelMag=magnitude(gx,gy)
+    SobelPhase= Phase(gx,gy)
+
     for i in range(0,rows-blockSize[0]+1,blockSize[0]):
         for j in range(0,cols-blockSize[1],blockSize[1]):
             block=img[i:i+blockSize[0],j:j+blockSize[1]]
