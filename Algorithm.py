@@ -14,30 +14,30 @@ def padding(img,pad):
     img[:,:pad]=0
     return img
 
-# def conv(img,filter):
-#     img = img.astype(np.int16)
-#     rows,cols=img.shape
-#     value=0
-#     for i in range(rows):
-#         for j in range(cols):
-#             # value=value+((img[i,j]*filter[i,j]))
-#             value=(value)+((img[i,j])*(filter[i][j]))
-#     return value
+def conv(img,filter):
+    img = img.astype(np.int16)
+    rows,cols=img.shape
+    value=0
+    for i in range(rows):
+        for j in range(cols):
+            # value=value+((img[i,j]*filter[i,j]))
+            value=(value)+((img[i,j])*(filter[i][j]))
+    return value
 
-def conv(img, filter):
-    img = img.astype(np.float32)
-    filter = np.array(filter, dtype=np.float32)
-    f_rows, f_cols = filter.shape
-    i_rows, i_cols = img.shape
-    pad_x, pad_y = f_rows // 2, f_cols // 2
-    padded_img = np.pad(img, ((pad_x, pad_x), (pad_y, pad_y)), mode='constant')
-    output = np.zeros_like(img, dtype=np.float32)
+# def conv(img, filter):
+#     img = img.astype(np.float32)
+#     filter = np.array(filter, dtype=np.float32)
+#     f_rows, f_cols = filter.shape
+#     i_rows, i_cols = img.shape
+#     pad_x, pad_y = f_rows // 2, f_cols // 2
+#     padded_img = np.pad(img, ((pad_x, pad_x), (pad_y, pad_y)), mode='constant')
+#     output = np.zeros_like(img, dtype=np.float32)
 
-    for i in range(i_rows):
-        for j in range(i_cols):
-            region = padded_img[i:i+f_rows, j:j+f_cols]
-            output[i, j] = np.sum(region * filter)
-    return output
+#     for i in range(i_rows):
+#         for j in range(i_cols):
+#             region = padded_img[i:i+f_rows, j:j+f_cols]
+#             output[i, j] = np.sum(region * filter)
+#     return output
 
 
 def magnitude(img1,img2):
@@ -87,11 +87,11 @@ def sobel(img,sobelx,sobely):
     rows,cols=img.shape
     magImg=img.copy()
     phaseImg=img.copy()
-    frows,fcols=sobelx.shape
+    # frows,fcols=sobelx.shape
 
-    for i in range(rows):
-        for j in range(cols):
-            window=img[i:i+frows,j:j+fcols]
+    for i in range(rows-2):
+        for j in range(cols-2):
+            window=img[i:i+3,j:j+3]
             value1=conv(window,sobelx)
             value2=conv(window,sobely)
             magImg[i,j]=value1
@@ -117,7 +117,7 @@ def hog(img,sobelx,sobely):
                 for n in range(0,blockSize[1],CellSize[1]):
                     cell=block[m:m+CellSize[0],n:n+CellSize[1]]
                     if cell.shape[0]==CellSize[0] and cell.shape[1]==CellSize[1]:
-                        CellList=hogImplementation(cell,sobelx,sobely)
+                        CellList=hogImplementation(cell,SobelMag,SobelPhase)
                         BlockList.append(CellList)
                         # print(BlockList)
     BlockList=np.array(BlockList)
