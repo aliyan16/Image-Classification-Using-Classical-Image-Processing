@@ -151,7 +151,19 @@ def hog(img,sobelx,sobely):
     BlockList=BlockList.flatten()
     return BlockList
             
-            
+
+def color_hog(img, sobelx, sobely):
+    # Split into R, G, B channels
+    channels = cv.split(img)
+    featureVector = []
+
+    for ch in channels:
+        ch_padded = padding(ch, 1)
+        hog_features = hog(ch_padded, sobelx, sobely)
+        featureVector.extend(hog_features)
+
+    return np.array(featureVector)
+
 
 
 
@@ -170,7 +182,7 @@ if __name__=='__main__':
     # sobely=[[-1,0,1],[-2,0,-2],[-1,0,1]]
     # imgList=hog(img,sobelx,sobely)
     # print(imgList)
-    trainPath = r'C:\AllData\Semester6\DIP\Assignment\Assignment2\A2_wbc_data\wbc_data\Train'
+    trainPath = r'C:\AllData\Semester6\DIP\Assignment\Assignment2\A2_wbc_data\wbc_data\Train_Cropped'
     classAverages = {}
 
     # Loop over all class folders (Basophil, Neutrophil, etc.)
@@ -185,18 +197,19 @@ if __name__=='__main__':
 
         for imgFile in os.listdir(classPath):
             imgPath = os.path.join(classPath, imgFile)
-            img = cv.imread(imgPath, cv.IMREAD_GRAYSCALE)
+            img = cv.imread(imgPath)
             if img is None:
                 print(f"Skipping {imgPath}, could not load.")
                 continue
 
             img = cv.resize(img, (64, 64))
-            img = padding(img, 1)  # Padding size 1 for 3x3 filters
+            # img = padding(img, 1)  # Padding size 1 for 3x3 filters
 
             sobelx = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]
             sobely = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]]
 
-            featureVector = hog(img, sobelx, sobely)
+            featureVector = color_hog(img, sobelx, sobely)
+            # featureVector = hog(img, sobelx, sobely)
             allFeatures.append(featureVector)
 
         if allFeatures:
@@ -212,22 +225,23 @@ if __name__=='__main__':
     predicted_labels = []
     accuracy=0.0
     total=0
-    testPath = r'C:\AllData\Semester6\DIP\Assignment\Assignment2\A2_wbc_data\wbc_data\Test'
+    testPath = r'C:\AllData\Semester6\DIP\Assignment\Assignment2\A2_wbc_data\wbc_data\Test_Cropped'
     for className in os.listdir(testPath):
         ClassPath=os.path.join(testPath,className)
-        if not os.path.isdir(classPath):
+        if not os.path.isdir(ClassPath):
             continue
         print(f'Processing for {className}')
 
-        for imgFile in os.listdir(classPath):
-            imgPath=os.path.join(classPath,imgFile)
-            img=cv.imread(imgPath,cv.IMREAD_GRAYSCALE)
+        for imgFile in os.listdir(ClassPath):
+            imgPath=os.path.join(ClassPath,imgFile)
+            img=cv.imread(imgPath)
             if img is None:
                 print(f"Skipping {imgPath}, could not load.")
                 continue
             img=cv.resize(img,(64,64))
-            paddedimg=padding(img,1)
-            testHogimg=hog(img,sobelx,sobely)
+            # paddedimg=padding(img,1)
+            testHogimg=color_hog(img,sobelx,sobely)
+            # testHogimg=hog(img,sobelx,sobely)
             mse_scores = {}
             for cls, avg_vector in classAverages.items():
                 mse = mean_squared_error(testHogimg, avg_vector)
