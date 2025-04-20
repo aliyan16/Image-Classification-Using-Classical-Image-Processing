@@ -198,6 +198,7 @@ if __name__=='__main__':
         for imgFile in os.listdir(classPath):
             imgPath = os.path.join(classPath, imgFile)
             img = cv.imread(imgPath)
+            # img = cv.imread(imgPath,cv.IMREAD_GRAYSCALE)
             if img is None:
                 print(f"Skipping {imgPath}, could not load.")
                 continue
@@ -238,6 +239,7 @@ if __name__=='__main__':
         for imgFile in os.listdir(ClassPath):
             imgPath=os.path.join(ClassPath,imgFile)
             img=cv.imread(imgPath)
+            # img = cv.imread(imgPath,cv.IMREAD_GRAYSCALE)
             if img is None:
                 print(f"Skipping {imgPath}, could not load.")
                 continue
