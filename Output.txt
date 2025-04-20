@@ -1,0 +1,23 @@
+My Output File 
+
+Feature Vectors 
+
+Basophil feature vector length: 3456
+Eosinophil feature vector length: 3456
+Lymphocyte feature vector length: 3456
+Monocyte feature vector length: 3456
+Neutrophil feature vector length: 3456
+
+
+Per Class Accuracy
+
+Basophil Accuracy is: 68.00%
+Eosinophil Accuracy is: 52.00%
+Lymphocyte Accuracy is: 60.00%
+Monocyte Accuracy is: 54.00%
+Neutrophil Accuracy is: 51.20%
+
+
+Overall Accuracy
+
+Algorithm Accuracy is: 51.20%

@@ -226,6 +226,9 @@ if __name__=='__main__':
     accuracy=0.0
     total=0
     testPath = r'C:\AllData\Semester6\DIP\Assignment\Assignment2\A2_wbc_data\wbc_data\Test_Cropped'
+    ClassAccuracy=[]
+    avClassName=[]
+    print('Making Predictions')
     for className in os.listdir(testPath):
         ClassPath=os.path.join(testPath,className)
         if not os.path.isdir(ClassPath):
@@ -256,19 +259,55 @@ if __name__=='__main__':
             if className.lower()==predicted_class.lower():
                 accuracy+=1
             total+=1
+            if total%50==0:
+                clsAv=(accuracy/total)*100
+                ClassAccuracy.append(clsAv)
+                avClassName.append(className)
+                
 
-            print(f"Image: {imgFile} | True Class: {className} | Predicted: {predicted_class}")
+            # print(f"Image: {imgFile} | True Class: {className} | Predicted: {predicted_class}")
+
     # Plot confusion matrix
     labels = sorted(classAverages.keys())  # Make sure order is consistent
     cm = confusion_matrix(true_labels, predicted_labels, labels=labels)
-    print('Accuracy is',(accuracy/total)*100)
+    print('Following is the Per Class Accuracy')
+    for i in range(len(ClassAccuracy)):
+        print('Accuracy for Class: ',avClassName[i],f' : {ClassAccuracy[i]}')
+    print('Overall Accuracy is:',(accuracy/total)*100)
 
+
+    outputFile='Output.txt'
+
+    with open(outputFile, 'w') as f:
+        f.write('My Output File \n\n')
+        f.write('Feature Vectors \n\n')
+        
+        for cls, avVec in classAverages.items():
+            f.write(f"{cls} feature vector length: {len(avVec)}\n")
+        
+        f.write('\n\nPer Class Accuracy\n\n')
+        
+        for i in range(len(ClassAccuracy)):
+            f.write(f"{avClassName[i]} Accuracy is: {ClassAccuracy[i]:.2f}%\n")
+        
+        f.write('\n\nOverall Accuracy\n\n')
+        f.write(f"Algorithm Accuracy is: {(accuracy/total)*100:.2f}%") 
 
     plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-                            xticklabels=labels, yticklabels=labels)
+    sns.heatmap(
+    cm, 
+    annot=True, 
+    fmt='d', 
+    cmap='viridis',  # Try: 'Reds', 'Greens', 'coolwarm', 'YlOrBr', 'magma'
+    xticklabels=labels, 
+    yticklabels=labels,
+    linewidths=0.5,   # Add grid lines
+    linecolor='gray'  # Grid line color
+    )
     plt.xlabel("Predicted Label")
     plt.ylabel("True Label")
     plt.title("Confusion Matrix")
     plt.tight_layout()
     plt.show()
+
+
