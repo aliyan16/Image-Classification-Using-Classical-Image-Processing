@@ -69,19 +69,7 @@ def norm(img):
     imgm = (img / np.max(img) * 255).astype(np.uint8)
     return imgm
 
-def hogImplementation(cell,SobelMag,SobelPhase):
-    Crows,Ccols=cell.shape
-    CellList=[0]*6
-    # gx=conv(cell,sobelx)
-    # gy=conv(cell,sobely)
-    # SobelMag=magnitude(gx,gy)
-    # SobelPhase= Phase(gx,gy)
-    SobelPhase[SobelPhase<0]+=180
-    SobelPhase[SobelPhase>180]-=180
-    for m in range(0,180,30):
-        CellList[m//30]=np.sum(SobelMag[(SobelPhase>=m)&(SobelPhase<m+30)])
-            
-    return CellList
+
 
 def sobel(img,sobelx,sobely):
     rows,cols=img.shape
@@ -98,26 +86,65 @@ def sobel(img,sobelx,sobely):
             phaseImg[i,j]=value2
     return magImg,phaseImg
 
-
+def hogImplementation(magcell,phaseCell):
+    # Crows,Ccols=cell.shape
+    CellList = np.zeros(6, dtype=np.float64)
+    # gx=conv(cell,sobelx)
+    # gy=conv(cell,sobely)
+    # SobelMag=magnitude(gx,gy)
+    # SobelPhase= Phase(gx,gy)
+    # SobelPhase[SobelPhase<0]+=180
+    # SobelPhase[SobelPhase>180]-=180
+    rows,cols=magcell.shape
+    for i in range(rows):
+        for j in range(cols):
+            value=magcell[i,j]
+            angle=phaseCell[i,j]
+            index=angle//30
+            if index>5:
+                index=5
+            CellList[index]+=value
+            # if angle>=0 and angle <=30:
+            #     CellList[0]+=value
+            # elif angle>30 and angle<=60:
+            #     CellList[30]+=value
+            # elif angle>60 and angle<=90:
+            #     CellList[60]+=value
+            # elif angle>90 and angle<=120:
+            #     CellList[90]+=value
+            # elif angle>120 and angle<=150:
+            #     CellList[120]+=value
+            # elif angle>150 and angle<=180:
+            #     CellList[150]+=value
+    # for m in range(0,180,30):
+    #     CellList[m//30]=np.sum(SobelMag[(SobelPhase>=m)&(SobelPhase<m+30)])
+            
+    return CellList
 
 def hog(img,sobelx,sobely):
     rows,cols=img.shape
-    blockSize=(rows//4,cols//4)
-    CellSize=(blockSize[0]//4,blockSize[1]//4)
+    # blockSize=(rows//4,cols//4)
+    # CellSize=(blockSize[0]//4,blockSize[1]//4)
+    blockSize=(16,16)
+    CellSize=(4,4)
     BlockList=[]
 
     gx,gy=sobel(img,sobelx,sobely)
     SobelMag=magnitude(gx,gy)
     SobelPhase= Phase(gx,gy)
+    SobelPhase[SobelPhase<0]+=180
+    SobelPhase[SobelPhase>180]-=180
 
     for i in range(0,rows-blockSize[0]+1,blockSize[0]):
         for j in range(0,cols-blockSize[1],blockSize[1]):
-            block=img[i:i+blockSize[0],j:j+blockSize[1]]
+            magblock=SobelMag[i:i+blockSize[0],j:j+blockSize[1]]
+            phaseBlock=SobelPhase[i:i+blockSize[0],j:j+blockSize[1]]
             for m in range(0,blockSize[0],CellSize[0]):
                 for n in range(0,blockSize[1],CellSize[1]):
-                    cell=block[m:m+CellSize[0],n:n+CellSize[1]]
-                    if cell.shape[0]==CellSize[0] and cell.shape[1]==CellSize[1]:
-                        CellList=hogImplementation(cell,SobelMag,SobelPhase)
+                    magcell=magblock[m:m+CellSize[0],n:n+CellSize[1]]
+                    phaseCell=phaseBlock[m:m+CellSize[0],n:n+CellSize[1]]
+                    if magcell.shape[0]==CellSize[0] and magcell.shape[1]==CellSize[1]:
+                        CellList=hogImplementation(magcell,phaseCell)
                         BlockList.append(CellList)
                         # print(BlockList)
     BlockList=np.array(BlockList)
@@ -183,9 +210,11 @@ if __name__=='__main__':
     
     true_labels = []
     predicted_labels = []
+    accuracy=0.0
+    total=0
     testPath = r'C:\AllData\Semester6\DIP\Assignment\Assignment2\A2_wbc_data\wbc_data\Test'
     for className in os.listdir(testPath):
-        ClassPath=os.path.join(className,testPath)
+        ClassPath=os.path.join(testPath,className)
         if not os.path.isdir(classPath):
             continue
         print(f'Processing for {className}')
@@ -196,7 +225,7 @@ if __name__=='__main__':
             if img is None:
                 print(f"Skipping {imgPath}, could not load.")
                 continue
-            img=np.resize(img,(64,64))
+            img=cv.resize(img,(64,64))
             paddedimg=padding(img,1)
             testHogimg=hog(img,sobelx,sobely)
             mse_scores = {}
@@ -205,14 +234,21 @@ if __name__=='__main__':
                 mse_scores[cls] = mse
 
             # Get predicted class (lowest MSE)
+            testHogimg = testHogimg / np.linalg.norm(testHogimg)
+            avg_vector = avg_vector / np.linalg.norm(avg_vector)
             predicted_class = min(mse_scores, key=mse_scores.get)
             true_labels.append(className)
             predicted_labels.append(predicted_class)
+            if className.lower()==predicted_class.lower():
+                accuracy+=1
+            total+=1
 
             print(f"Image: {imgFile} | True Class: {className} | Predicted: {predicted_class}")
     # Plot confusion matrix
     labels = sorted(classAverages.keys())  # Make sure order is consistent
     cm = confusion_matrix(true_labels, predicted_labels, labels=labels)
+    print('Accuracy is',(accuracy/total)*100)
+
 
     plt.figure(figsize=(8, 6))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
